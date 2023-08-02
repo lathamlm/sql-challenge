@@ -1,42 +1,6 @@
-CREATE TABLE departments (
-	dept_no VARCHAR PRIMARY KEY,
-	dept_name VARCHAR
-);
-
-CREATE TABLE dept_emp (
-	emp_no int,
-	dept_no VARCHAR,
-	PRIMARY KEY (emp_no, dept_no),
-	FOREIGN KEY (dept_no) REFERENCES departments(dept_no)
-);
-
-CREATE TABLE dept_manager (
-	dept_no VARCHAR,
-	emp_no int PRIMARY KEY,
-	FOREIGN KEY (dept_no) REFERENCES departments (dept_no)
-);
-
-CREATE TABLE titles (
-	title_id VARCHAR PRIMARY KEY,
-	title VARCHAR
-);
-
-CREATE TABLE employees (
-	emp_no int PRIMARY KEY,
-	emp_title_id VARCHAR,
-	birth_date DATE,
-	first_name VARCHAR,
-	last_name VARCHAR,
-	sex VARCHAR,
-	hire_date DATE,
-	FOREIGN KEY (emp_title_id) REFERENCES titles (title_id)
-);
-
-CREATE TABLE salaries (
-	emp_no int PRIMARY KEY,
-	salary money,
-	FOREIGN KEY (emp_no) REFERENCES employees (emp_no)
-);
+-- ------------------------------------------------------------------
+-- QUERIES
+-- ------------------------------------------------------------------
 
 -- 1. List the employee number, last name, first name, sex, and salary of each employee
 SELECT emp_no AS "Employee Number", last_name AS "Last Name", first_name AS "First Name", sex AS "Sex",
@@ -60,10 +24,10 @@ SELECT dept_no AS "Department Number",
 	FROM departments
 	WHERE dept_manager.dept_no = departments.dept_no),
 		emp_no AS "Employee Number", 
-		(SELECT employees.first_name AS "First Name"
+		(SELECT employees.first_name AS "Manager First Name"
 			FROM employees
 			WHERE dept_manager.emp_no = employees.emp_no),
-			(SELECT employees.last_name AS "Last Name"
+			(SELECT employees.last_name AS "Manager Last Name"
 				FROM employees
 				WHERE dept_manager.emp_no = employees.emp_no)
 FROM dept_manager;
@@ -83,11 +47,13 @@ SELECT dept_no AS "Department Number", emp_no As "Employee Number",
 			WHERE dept_emp.dept_no = departments.dept_no)
 FROM dept_emp;
 
+
 -- 5. List first name, last name and sex of each employee whose first name is Hercules and whose
 --    last name begins with the letter B.
-SELECT first_name, last_name, sex
+SELECT first_name AS "First Name", last_name AS "Last Name", sex AS "Sex"
 FROM employees
-WHERE first_name = 'Hercules' AND last_name LIKE 'B%'
+WHERE first_name = 'Hercules' AND last_name LIKE 'B%';
+
 
 -- 6. List each employee in the Sales department, inclduing their employee number, last name, and first name.
 SELECT emp_no AS "Employee Number", last_name AS "Last Name", first_name AS "First Name"
@@ -102,12 +68,33 @@ WHERE emp_no IN(
 	)
 );
 
-SELECT * FROM dept_emp
+
 -- 7. List each employee in the Sales and Development Departments, including their employee number,
 --    last name, first name, and department name.
-SELECT emp_no AS "Employee Number"
-FROM dept_emp
-WHERE dept_no IN(
-	SELECT dept_no 
-	FROM departments
-	WHERE dept_name = 'Sales' OR dept_name = 'Development')
+
+SELECT e.emp_no AS "Employee Number", e.last_name AS "Last Name", e.first_name AS "First Name", dp.dept_name AS "Department Name"
+FROM employees AS e
+LEFT JOIN dept_emp AS d ON
+d.emp_no = e.emp_no
+LEFT JOIN departments AS dp ON
+dp.dept_no = d.dept_no
+WHERE e.emp_no IN(
+	SELECT emp_no 
+	FROM dept_emp
+	WHERE dept_no IN(
+		SELECT dept_no 
+		FROM departments
+		WHERE dept_name = 'Sales' OR dept_name = 'Development'
+	)
+) AND dp.dept_name = 'Sales' OR dp.dept_name = 'Development';
+-- NEEDED TO ADD SECOND PART OF 'WHERE' TO NARROW TO 'Sales'/'Development' AGAIN SINCE SOME EMPLOYEES FOR THOSE DEPARTMENTS ALSO 
+-- WORKED FOR OTHER DEPARTMENTS AND THE OTHER DEPARTMENTS WERE ALSO SHOWING IN THE QUERY
+
+
+-- 8. List the frequency counts, in descending order, of all the employee last names 
+--    (that is, how many employees share each last name)
+
+SELECT last_name AS "Last Name", COUNT(last_name) AS "Last Name Count"
+FROM employees
+GROUP BY last_name
+ORDER BY "Last Name Count" DESC;
